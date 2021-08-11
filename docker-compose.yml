@@ -1,0 +1,78 @@
+version: "3.7"
+
+services:
+  zenlix_system:
+    build: docker/system
+    container_name: ${SERVICE_NAME}_system
+    hostname: ${SERVICE_NAME}_system
+    restart: unless-stopped
+    networks:
+      - proxy
+      - internal
+    environment:
+      - TZ="Europe/Kiev"
+    ports:
+      - 8083:8083
+      - 3001:3001
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.zenlix_system.rule=Host(`online.cci.zp.ua`)
+      - traefik.http.routers.zenlix_system.entrypoints=websecure
+      - traefik.http.routers.zenlix_system.tls=true
+      - traefik.http.routers.zenlix_system.tls.certresolver=letsencrypt-resolver
+
+  zenlix_db:
+    image: mysql:8
+    hostname: ${SERVICE_NAME}_db
+    container_name: ${SERVICE_NAME}_db
+    command: --default-authentication-plugin=mysql_native_password
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./db:/var/lib/mysql
+      - /etc/timezone:/etc/timezone:ro
+      - /etc/localtime:/etc/localtime:ro
+    networks:
+      - internal
+    cap_add:
+      - SYS_NICE
+    labels:
+      - traefik.enable=false
+
+  # zenlix_db_adminer:
+  #   image: adminer
+  #   restart: always
+  #   depends_on:
+  #     - zenlix_db
+  #   networks:
+  #     - proxy
+  #     - internal
+  #   ports:
+  #     - 9090:8080
+  #   labels:
+  #     - traefik.enable=true
+  #     - traefik.http.routers.cci_adminer.rule=Host(`zenlix-adminer.cci.zp.ua`)
+  #     - traefik.http.routers.cci_adminer.entrypoints=websecure
+  #     - traefik.http.routers.cci_adminer.tls=true
+  #     - traefik.http.routers.cci_adminer.tls.certresolver=letsencrypt-resolver
+  #     - traefik.http.services.cci_adminer.loadbalancer.server.port=9090
+
+  zenlix_redis:
+    image: redis:6
+    hostname: ${SERVICE_NAME}_redis
+    container_name: ${SERVICE_NAME}_redis
+    restart: always
+    networks:
+      - internal
+    labels:
+      - traefik.enable=false
+
+networks:
+  proxy:
+    external: true
+  internal:
+    external: false
