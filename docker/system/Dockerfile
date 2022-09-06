@@ -1,4 +1,4 @@
-FROM zpalata/zenlix:latest
+FROM zpalata/cci-zenlix:latest
 
 COPY --chown=zenlix:zenlix start.sh /home/zenlix/zenlix/start.sh
 
